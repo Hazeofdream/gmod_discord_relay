@@ -3,6 +3,7 @@ require("chttp")
 local tmpAvatars = {}
 -- for bots
 tmpAvatars['0'] = 'https://avatars.cloudflare.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg'
+tmpAvatars['relaybot'] = 'https://cdn.discordapp.com/avatars/1416929563056930847/1add2f9946358f5d4a1b4c9af3166bb4.webp'
 
 local IsValid = IsValid
 local util_TableToJSON = util.TableToJSON
@@ -12,18 +13,36 @@ local coroutine_resume = coroutine.resume
 local coroutine_create = coroutine.create
 local string_find = string.find
 
-function Discord.send(form) 
-	if type( form ) ~= "table" then Error( '[Discord] invalid type!' ) return end
+function Discord.send(form)
+    if type(form) ~= "table" then
+        Error('[Discord] invalid type!')
+        return
+    end
 
-	CHTTP({
-		["failed"] = function( msg )
-			print( "[Discord] "..msg )
-		end,
-		["method"] = "POST",
-		["url"] = Discord.webhook,
-		["body"] = util_TableToJSON(form),
-		["type"] = "application/json; charset=utf-8"
-	})
+    -- If the caller passed a short 'bot' id, attempt to use a default avatar for that bot.
+    -- e.g. form.bot = '0' or 'relaybot' will use tmpAvatars['0'] unless form.avatar_url is set.
+    if form.bot and not form.avatar_url then
+        local botDefault = tmpAvatars[tostring(form.bot)]
+        if botDefault and botDefault ~= "" then
+            form.avatar_url = botDefault
+        end
+    end
+
+    if not form.username and form.name then
+        form.username = form.name
+    elseif not form.username and form.username_override then
+        form.username = form.username_override
+    end
+
+    -- At this point `form` may now contain .username and/or .avatar_url which Discord webhook accepts.
+    -- Send JSON body using CHTTP as the existing code did.
+    CHTTP({
+        ["failed"] = function(msg) print("[Discord] "..msg) end,
+        ["method"] = "POST",
+        ["url"] = Discord.webhook,
+        ["body"] = util_TableToJSON(form),
+        ["type"] = "application/json; charset=utf-8"
+    })
 end
 
 local function getAvatar(id, co)
@@ -70,6 +89,7 @@ local function playerConnect( ply )
 	local co = coroutine_create( function()
 		local form = {
 			["username"] = Discord.hookname,
+			["avatar_url"] = "https://cdn.discordapp.com/avatars/1416929563056930847/1add2f9946358f5d4a1b4c9af3166bb4.webp",
 			["embeds"] = {{
 				["author"] = {
 					["name"] = ply.name .. DiscordString.connecting,
@@ -106,6 +126,7 @@ local function plyFrstSpawn(ply)
 		local co = coroutine_create(function()
 			local form = {
 				["username"] = Discord.hookname,
+				["avatar_url"] = "https://cdn.discordapp.com/avatars/1416929563056930847/1add2f9946358f5d4a1b4c9af3166bb4.webp",
 				["embeds"] = {{
 					["author"] = {
 						["name"] = ply:Nick() .. DiscordString.connected,
@@ -141,6 +162,7 @@ local function plyDisconnect(ply)
 	local co = coroutine_create(function()
 		local form = {
 			["username"] = Discord.hookname,
+			["avatar_url"] = "https://cdn.discordapp.com/avatars/1416929563056930847/1add2f9946358f5d4a1b4c9af3166bb4.webp",
 			["embeds"] = {{
 				["author"] = {
 					["name"] = ply.name .. DiscordString.disconnected,
@@ -182,6 +204,7 @@ if Discord.srvStarted then
 	hook.Add("Initialize", "!!discord_srvStarted", function() 
 		local form = {
 			["username"] = Discord.hookname,
+			["avatar_url"] = "https://cdn.discordapp.com/avatars/1416929563056930847/1add2f9946358f5d4a1b4c9af3166bb4.webp",
 			["embeds"] = {{
 				["title"] = DiscordString.serverStarted,
 				["description"] = DiscordString.currentMapAlt .. game.GetMap(),
@@ -197,6 +220,7 @@ if Discord.srvShutdown then
 	hook.Add("ShutDown", "!!discord_srvShutdown", function() 
 		local form = {
 			["username"] = Discord.hookname,
+			["avatar_url"] = "https://cdn.discordapp.com/avatars/1416929563056930847/1add2f9946358f5d4a1b4c9af3166bb4.webp",
 			["embeds"] = {{
 				["title"] = DiscordString.serverShutdown,
 				["description"] = '',
