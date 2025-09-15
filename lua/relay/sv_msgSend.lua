@@ -13,7 +13,6 @@ local BlockedPrefixes = {
     "."
 }
 
--- helper to check if text starts with a blocked prefix
 local function IsBlockedMessage(msg)
     for _, prefix in ipairs(BlockedPrefixes) do
         if string.StartWith(msg, prefix) then
@@ -37,8 +36,6 @@ function Discord.send(form)
         return
     end
 
-    -- If the caller passed a short 'bot' id, attempt to use a default avatar for that bot.
-    -- e.g. form.bot = '0' or 'relaybot' will use tmpAvatars['0'] unless form.avatar_url is set.
     if form.bot and not form.avatar_url then
         local botDefault = tmpAvatars[tostring(form.bot)]
         if botDefault and botDefault ~= "" then
@@ -52,8 +49,6 @@ function Discord.send(form)
         form.username = form.username_override
     end
 
-    -- At this point `form` may now contain .username and/or .avatar_url which Discord webhook accepts.
-    -- Send JSON body using CHTTP as the existing code did.
     CHTTP({
         ["failed"] = function(msg) print("[Discord] "..msg) end,
         ["method"] = "POST",
