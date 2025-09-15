@@ -5,6 +5,24 @@ local tmpAvatars = {}
 tmpAvatars['0'] = 'https://avatars.cloudflare.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg'
 tmpAvatars['relaybot'] = 'https://cdn.discordapp.com/avatars/1416929563056930847/1add2f9946358f5d4a1b4c9af3166bb4.webp'
 
+-- list of prefixes we do NOT want to relay (admin commands, etc.)
+local BlockedPrefixes = {
+    "!",
+    "/",
+    "-",
+    "."
+}
+
+-- helper to check if text starts with a blocked prefix
+local function IsBlockedMessage(msg)
+    for _, prefix in ipairs(BlockedPrefixes) do
+        if string.StartWith(msg, prefix) then
+            return true
+        end
+    end
+    return false
+end
+
 local IsValid = IsValid
 local util_TableToJSON = util.TableToJSON
 local util_SteamIDTo64 = util.SteamIDTo64
@@ -19,6 +37,8 @@ function Discord.send(form)
         return
     end
 
+    -- If the caller passed a short 'bot' id, attempt to use a default avatar for that bot.
+    -- e.g. form.bot = '0' or 'relaybot' will use tmpAvatars['0'] unless form.avatar_url is set.
     if form.bot and not form.avatar_url then
         local botDefault = tmpAvatars[tostring(form.bot)]
         if botDefault and botDefault ~= "" then
@@ -32,6 +52,8 @@ function Discord.send(form)
         form.username = form.username_override
     end
 
+    -- At this point `form` may now contain .username and/or .avatar_url which Discord webhook accepts.
+    -- Send JSON body using CHTTP as the existing code did.
     CHTTP({
         ["failed"] = function(msg) print("[Discord] "..msg) end,
         ["method"] = "POST",
@@ -55,6 +77,8 @@ local function getAvatar(id, co)
 end
 
 local function formMsg( ply, str )
+	if IsBlockedMessage(text) then return end
+	
 	local id = tostring( ply:SteamID64() )
 
 	local co = coroutine_create( function() 
