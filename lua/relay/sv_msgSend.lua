@@ -14,6 +14,7 @@ local BlockedPrefixes = {
 }
 
 local function IsBlockedMessage(msg)
+	if type(msg) ~= "string" then return false end
     for _, prefix in ipairs(BlockedPrefixes) do
         if string.StartWith(msg, prefix) then
             return true
@@ -72,7 +73,7 @@ local function getAvatar(id, co)
 end
 
 local function formMsg( ply, str )
-	if IsBlockedMessage(text) then return end
+	if IsBlockedMessage(str) then return end
 	
 	local id = tostring( ply:SteamID64() )
 
